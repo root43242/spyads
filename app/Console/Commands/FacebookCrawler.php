@@ -28,7 +28,14 @@ class FacebookAdsCrawler extends Command
     foreach ($pages as $page) {
 
         // Criar o cliente Panther (Chromium headless browser)
-        $client = Client::createChromeClient();
+        $client = Client::createChromeClient(null, [
+            '--headless',
+            '--disable-gpu',
+            '--no-sandbox',
+            '--disable-dev-shm-usage',
+            '--enable-logging', // Habilitar logging
+            '--v=1', // Verbosidade
+        ]);
 
         // URL da página do Facebook Ads Library usando o page_id do banco de dados
         $url = 'https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=ALL&media_type=all&search_type=page&view_all_page_id='.$page->page_id;
