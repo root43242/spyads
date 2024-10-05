@@ -26,9 +26,9 @@ class FacebookAdsCrawler extends Command
     $pages = FacebookPage::all();
 
     foreach ($pages as $page) {
-
-        // Criar o cliente Panther (Chromium headless browser)
-        $client = Client::createChromeClient(null, [
+     try {
+          // Criar o cliente Panther (Chromium headless browser)
+          $client = Client::createChromeClient(null, [
             '--headless',
             '--disable-gpu',
             '--no-sandbox',
@@ -44,22 +44,23 @@ class FacebookAdsCrawler extends Command
         $this->info("Acessando a página do Facebook Ads Library para a página ID: {$page->page_id}...");
         $crawler = $client->request('GET', $url);
 
-        $client->waitFor('img.xl1xv1r', 60); // Aumente o timeout se necessário
+        $client->waitFor('img.xl1xv1r', 120); // Aumente o timeout se necessário
         $imageUrl = $crawler->filter('img.xl1xv1r')->attr('src');
 
         // Aguarde até que a div com os resultados esteja carregada na página
-        $client->waitFor('.x8t9es0[role="heading"]', 60); // Aumente o timeout se necessário
+        $client->waitFor('.x8t9es0[role="heading"]', 120); // Aumente o timeout se necessário
         
         // Pegue todos os elementos que correspondem ao seletor
         $PageName = $crawler->filter('.x8t9es0[role="heading"]')->first()->text();
 
-        $client->waitFor('.x1uxerd5[role="heading"]', 60); // Aumente o timeout se necessário
+        $client->waitFor('.x1uxerd5[role="heading"]', 120); // Aumente o timeout se necessário
         $adsCountElements = $crawler->filter('.x1uxerd5[role="heading"]')->first()->text();
 
         preg_match('/\d+/', $adsCountElements, $matches);
         $adsCount = isset($matches[0]) ? $matches[0] : '0'; 
 
         if($page->last_activity_campaign === $adsCount){
+            $this->info("Pagina ja scanneada nada mudou");
             continue;
         }else{
             $page->last_activity_campaign = $adsCount;
@@ -105,6 +106,13 @@ class FacebookAdsCrawler extends Command
         ]);
 
         $this->info("Notificação enviada para {$PageName} com {$adsCount} anúncios ativos.");
+        } catch (\Facebook\WebDriver\Exception\TimeoutException $e) {
+            $this->error("Timeout ao acessar a página {$page->page_id}. Continuando para a próxima...");
+            continue; // Pula para a próxima iteração do foreach
+        } catch (\Exception $e) {
+            $this->error("Erro ao acessar a página {$page->page_id}: " . $e->getMessage());
+            continue; // Em caso de qualquer outro erro, também continuar
+        }
     }
 }
 
