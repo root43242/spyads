@@ -113,6 +113,8 @@ class FacebookAdsCrawler extends Command
             $this->error("Erro ao acessar a página {$page->page_id}: " . $e->getMessage());
             continue; // Em caso de qualquer outro erro, também continuar
         }
+
+        sleep(120);
     }
 }
 
